@@ -53,16 +53,12 @@ class UstreamIE(InfoExtractor):
             return self.url_result(desktop_url, 'Ustream')
 
         params = self._download_json(
-            'http://cdngw.ustream.tv/rgwjson/Viewer.getVideo/' + json.dumps({
-                'brandId': 1,
-                'videoId': int(video_id),
-                'autoplay': False,
-            }), video_id)
+            'https://api.ustream.tv/videos/%s.json' % video_id, video_id)
 
-        if 'error' in params:
-            raise ExtractorError(params['error']['message'], expected=True)
-
-        video_url = params['flv']
+        try:
+            video_url = params['video']['media_urls']['flv']
+        except KeyError:
+            raise ExtractorError('Video URL not found', expected=True)
 
         webpage = self._download_webpage(url, video_id)
 
@@ -73,7 +69,7 @@ class UstreamIE(InfoExtractor):
 
         if not video_title:
             try:
-                video_title = params['moduleConfig']['meta']['title']
+                video_title = params['video']['title']
             except KeyError:
                 pass
 
@@ -85,7 +81,7 @@ class UstreamIE(InfoExtractor):
 
         if not uploader:
             try:
-                uploader = params['moduleConfig']['meta']['userName']
+                uploader = params['video']['owner']['username']
             except KeyError:
                 uploader = None
 
